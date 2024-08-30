@@ -36,10 +36,9 @@ class Storage implements StorageInterface {
       if (!value) {
         return;
       }
-      console.log('get', key);
       return JSON.parse(value);
     } catch (e) {
-      console.log('Error while fetching data from local storage', e);
+      console.error('Error while fetching data from local storage', e);
     }
   }
 
@@ -50,7 +49,6 @@ class Storage implements StorageInterface {
       }
 
       this.mmkvInstance.set(key, JSON.stringify(value));
-      console.log('isSuccessFully set', key);
     } catch (e) {
       console.error('Error while fetching the value', e);
     }
@@ -59,7 +57,6 @@ class Storage implements StorageInterface {
   delete(key: keyof StoredData) {
     try {
       this.mmkvInstance.delete(key);
-      console.log('deleted', key);
     } catch (e) {
       console.error(`Error while deleting ${key}`);
     }

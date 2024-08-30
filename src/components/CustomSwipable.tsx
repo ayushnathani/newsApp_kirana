@@ -1,4 +1,4 @@
-import React, {ReactElement, useEffect} from 'react';
+import React, {ReactElement} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {
   PanGestureHandler,
@@ -8,34 +8,28 @@ import Animated, {
   useAnimatedGestureHandler,
   useAnimatedStyle,
   useSharedValue,
-  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 
+const styles = StyleSheet.create({
+  container: {flex: 1, justifyContent: 'center'},
+  rightAction: {
+    position: 'absolute',
+    right: 0,
+    flexDirection: 'row',
+  },
+});
+
 export const CustomSwipable = ({
-  index,
-  isValidating,
   RightSwipeOptions,
   content,
-  seenNudge,
-  setSeenNudge,
   close,
-  first,
-  singleItem,
-  setFirst,
-  count,
+  disabled,
 }: {
-  index: number;
-  isValidating: boolean;
   RightSwipeOptions: ReactElement;
   content: ReactElement;
-  seenNudge: number;
-  setSeenNudge: (i: number) => void;
   close?: boolean;
-  first?: boolean;
-  setFirst: (i: boolean) => void;
-  singleItem?: boolean;
-  count?: number;
+  disabled?: boolean;
 }) => {
   const swipeableStyles = StyleSheet.create({
     containerStyle: {zIndex: 100},
@@ -59,7 +53,7 @@ export const CustomSwipable = ({
     onEnd: event => {
       pressed.value = false;
       if (event.velocityX < 0) {
-        x.value = withTiming(singleItem ? -75 : count ? -count * 70 : -150, {
+        x.value = withTiming(-75, {
           duration: 300,
         });
       } else {
@@ -68,46 +62,11 @@ export const CustomSwipable = ({
     },
   });
 
-  useEffect(() => {
-    if (
-      seenNudge < 3 &&
-      x.value === 0 &&
-      index === 0 &&
-      !isValidating &&
-      !singleItem &&
-      first
-    ) {
-      setFirst(false);
-      x.value = withSequence(
-        withTiming(singleItem ? -60 : count ? -count * 70 : -150, {
-          duration: 1000,
-        }),
-        withTiming(0, {duration: 1000}),
-      );
-      setTimeout(() => {
-        setSeenNudge(seenNudge >= 3 ? 1 : seenNudge + 1);
-      }, 1000);
-    }
-  }, [
-    count,
-    index,
-    isValidating,
-    seenNudge,
-    setSeenNudge,
-    singleItem,
-    x,
-    first,
-    setFirst,
-  ]);
-
   const swipeAnimatedStyle = useAnimatedStyle(() => {
     if (x.value > 0) {
       x.value = 0;
     }
-    if (x.value < (count ? -count * 70 : -150) && !singleItem) {
-      x.value = count ? -count * 70 : -150;
-    }
-    if (singleItem && x.value < -75) {
+    if (x.value < -75) {
       x.value = -75;
     }
 
@@ -125,26 +84,17 @@ export const CustomSwipable = ({
   });
 
   return (
-    <View style={{flex: 1}}>
+    <View style={styles.container}>
       <PanGestureHandler
         activeOffsetX={[-10, 10]}
-        onGestureEvent={eventHandler}>
+        onGestureEvent={!disabled ? eventHandler : undefined}>
         <Animated.View
           style={[swipeableStyles.containerStyle, swipeAnimatedStyle]}>
           {content}
         </Animated.View>
       </PanGestureHandler>
 
-      <View
-        style={{
-          position: 'relative',
-          height: '100%',
-          right: 0,
-          justifyContent: 'flex-end',
-          flexDirection: 'row',
-        }}>
-        {RightSwipeOptions}
-      </View>
+      <View style={styles.rightAction}>{RightSwipeOptions}</View>
     </View>
   );
 };
