@@ -5,114 +5,74 @@
  * @format
  */
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import React, {useCallback, useEffect, useState} from 'react';
+import List from './src/components/List';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+import axios from 'axios';
+import {SyncStorage} from './src/services/storage';
+import {Text} from 'react-native';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
 function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  const [page, setPage] = useState(1);
+  const newsData = SyncStorage.get('newsData');
+  const [error, setError] = useState(false);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+  const [newsArticles, setNewsArticles] = useState(newsData ?? []);
+
+  const getNewsArticles = useCallback(async () => {
+    try {
+      console.log('isCalled??');
+      // const response = await axios.post(
+      //   'https://asia-south1-kc-stage-rp.cloudfunctions.net/globalNews',
+      //   '',
+      //   {
+      //     params: {
+      //       endpoint: 'everything',
+      //       q: 'india',
+      //       page: page,
+      //       apiKey: '5c659f698d0549b0895d0fcb6ba84e20',
+      //     },
+      //     headers: {
+      //       Accept: 'application/json, text/plain, */*',
+      //       'Content-Type': 'application/x-www-form-urlencoded',
+      //     },
+      //   },
+      // );
+      const response = await axios.get(
+        `https://newsapi.org/v2/everything?q=india&page=${page}&apiKey=df3e14fc00cd4f26baf9b6c09c79d57e`,
+      );
+      if (response.data.articles) {
+        setNewsArticles([]);
+        SyncStorage.set('newsData', response.data.articles);
+        setNewsArticles(response.data.articles);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }, [page]);
+
+  useEffect(() => {
+    if (!newsData || newsData.length === 0) {
+      getNewsArticles();
+    }
+  }, [getNewsArticles, newsData]);
+
+  if (error) {
+    return <Text>Something went wrong...</Text>;
+  }
+
+  if (!newsArticles || newsArticles.length === 0) {
+    return <Text>Loading...</Text>;
+  }
+
+  console.log('newsArticles', newsArticles.length);
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <GestureHandlerRootView style={{flex: 1}}>
+      <List page={page} setPage={setPage} newsData={newsArticles} />
+    </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
 
 export default App;
